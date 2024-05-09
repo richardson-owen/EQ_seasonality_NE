@@ -11,10 +11,6 @@ The study investigates the spatial variation of changes in extreme discharge sea
 ## Date
 - May 9, 2024
 
-## Data
-The analysis utilizes a complete record of precipitation from the dataset `complete_record_NE_1901.Rds`, which can be used instead of the raw precipitation data. 
-The discharge data is loaded within the code, allowing for streamlined analysis.
-
 ### Raw Data Access
 Access to the raw precipitation data can be found here (ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/)
 
