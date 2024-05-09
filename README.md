@@ -2,7 +2,6 @@
 
 ## Overview
 This repository contains the R code and data used in the analysis for the paper "Spatial Variation of Changes in Extreme Discharge Seasonality across the Northeastern United States" 
-The study investigates the spatial variation of changes in extreme discharge seasonality across the Northeastern United States, focusing on precipitation and streamflow data.
 
 ## Author
 - **Owen Richardson**
