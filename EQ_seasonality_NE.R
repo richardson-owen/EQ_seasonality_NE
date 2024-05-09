@@ -1,11 +1,3 @@
-setwd("C:/Users/richa/OneDrive/Documents/Dartmouth/Hydrology/EQ_2024")
-
-# full list of prcp records 1901-2021 on Dartmouth EARS "geo"
-# file_list <- list.files(path="//geo.dartmouth.edu/files/Research Groups/Fluvial_Lab/Richardson/by_station")
-
-# List of >80% records (1901-2021), extended thru 12/31/2023
-file_list <- list.files(path="C:/Users/richa/OneDrive/Documents/Dartmouth/Hydrology/EQ_2024/by_station_2023")
-
 # load required packages
 library(data.table)
 library(lubridate)
