@@ -23,6 +23,9 @@ library(rnaturalearthhires)
 library(circular)
 
 #### Create a table of all ghcnd prcp data for stations with more than 80% complete record from 1901-01-01 to 2023-12-31 ####
+## use this if you download the ghcnd data from  ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/ (this filtering can take hours)
+## to run this code without downloading ALL the ghcnd data, load in 'complete_record_NE_1901.Rds' below
+
 
 # #initiate a blank data table, each iteration of the loop will append the data from the given file to this variable
 # complete_record_NE_1901 <- data.table()
