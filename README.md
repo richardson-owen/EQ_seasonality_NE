@@ -20,6 +20,7 @@ Additional files required to complete the analysis are attached.
 - `ne_10m_lakes`: Lakes shapefile, available at https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-lakes/
 - `HCDNgages.csv`: List of site numbers for all USGS HCDN stream gages
 - `QTable.csv`: 2 year flood (Q2) for each of the HCDN gages, determined using the Log-Pearson Type III distribution fit to annual instantaneous peak discharges.
+- `ghcnd_stations.csv`: GHCN Daily stations, used for precipitation analysis.
 
 ## Contact
-For any additional questions or requests, please contact Owen Richardson at richardson.owenhugo@gmail.com
+For any additional questions or requests, please contact Owen Richardson at owen.richardson@colostate.edu
