@@ -22,5 +22,8 @@ Additional files required to complete the analysis are attached.
 - `QTable.csv`: 2 year flood (Q2) for each of the HCDN gages, determined using the Log-Pearson Type III distribution fit to annual instantaneous peak discharges.
 - `ghcnd_stations.csv`: GHCN Daily stations, used for precipitation analysis.
 
+## Raw Data
+GHCNd station precipitation data are available at ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/. Stream gauging records are available at https://waterdata.usgs.gov/nwis (USGS). 
+
 ## Contact
 For any additional questions or requests, please contact Owen Richardson at owen.richardson@colostate.edu
