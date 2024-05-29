@@ -63,30 +63,6 @@ library(circular)
 # reload here for future use
 complete_record_NE_1901 = readRDS('complete_record_NE_1901.Rds')
 setDT(complete_record_NE_1901)
-
-# Extract the year from Date
-complete_record_NE_1901[, Year := year(Date)]
-
-# Calculate the number of days in each year using ifelse
-complete_record_NE_1901[, total_days := ifelse((Year %% 4 == 0 & (Year %% 100 != 0 | Year %% 400 == 0)), 366, 365)]
-
-# Calculate the total number of valid days (non-NA values) for each station and year
-completeness <- complete_record_NE_1901[, .(
-  total_days = unique(total_days),  # unique() since total_days is the same for all entries in the same year
-  valid_days = sum(!is.na(Value))
-), by = .(Station_ID, Year)]
-
-# Calculate the percentage of valid days
-completeness[, completeness_percentage := (valid_days / total_days) * 100]
-
-
-# Identify station-year combinations with completeness < 80%
-incomplete_records <- completeness[completeness_percentage < 80, .(Station_ID, Year)]
-
-# Remove incomplete years from complete_record_NE_1901
-complete_record_NE_1901 <- complete_record_NE_1901[!incomplete_records, on = .(Station_ID, Year)]
-
-
 # cutting the record such that only observations after 1950 are included
 complete_record_NE_1901 = complete_record_NE_1901[, year_cut:=year(Date)]
 complete_record_NE_1950 = complete_record_NE_1901[year_cut>=1950]
