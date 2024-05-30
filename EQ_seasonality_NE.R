@@ -34,7 +34,7 @@ library(circular)
 # date_1<-as.Date("1901-01-01")
 # date_2<-as.Date("2023-12-31")
 # a = seq(from = date_1, to = date_2, by = 'day')
-# numdays_1901 = length(a)-1 # there are 44924 days from 1901-01-01 to 2023-12-31
+# numdays_1901 = length(a) # there are 44925 days from 1901-01-01 to 2023-12-31
 # 
 # 
 # # Filtering and compiling the ghcn daily prcp data
