@@ -66,6 +66,7 @@ setDT(complete_record_NE_1901)
 # Extract the year from Date
 complete_record_NE_1901[, Year := year(Date)]
 
+
 # Create a list of stations that have at least 80% complete record from 1901 to 2023
 station_table_1901 <- unique(complete_record_NE_1901, by = "Station_ID")
 station_list_1901 <- station_table_1901$Station_ID
@@ -996,62 +997,61 @@ Inland_S_stations = prcp_circ_cox[Latitude <+ 42 & dist_km > 150]
 # summing the top prcp values by year and station
 
 quadrantCpt = function(quadrant){
-quadrant_stations = quadrant
-# find sum of EP per year per station
-sumTopPrcp = data.table()
-years1950 = c(1950:2023)
-for(i in quadrant_stations$Station_ID){ 
-  #print(i)
-  station_select = data.table()
-  station_select = TopPrcp[Station_ID == i]
-  year_sum_table = data.table()
-  for(j in years1950){
-    #print(j)
-    year_select = station_select[Year == j]
-    year_select = year_select[ , sumTopPrcp :=sum(Value)]
-    year_select = unique(year_select, by = "sumTopPrcp")
-    year_select = year_select[ , c("Value", "V5", "V6", "V7", "V8"):= NULL]
-    year_sum_table = rbind(year_sum_table, year_select)
+  quadrant_stations = quadrant
+  # find sum of EP per year per station
+  sumTopPrcp = data.table()
+  years1950 = c(1950:2023)
+  for(i in quadrant_stations$Station_ID){ 
+    station_select = TopPrcp[Station_ID == i]
+    year_sum_table = data.table()
+    for(j in years1950){
+      year_select = station_select[Year == j]
+      
+      if (nrow(year_select) > 0) {
+        sumTopPrcp_value = sum(year_select$Value, na.rm = TRUE)
+        year_sum_table = rbind(year_sum_table, data.table(Station_ID = i, Year = j, sumTopPrcp = sumTopPrcp_value), fill = TRUE)
+      } else {
+        year_sum_table = rbind(year_sum_table, data.table(Station_ID = i, Year = j, sumTopPrcp = 0), fill = TRUE)
+      }
+    }
+    sumTopPrcp = rbind(sumTopPrcp, year_sum_table, fill = TRUE)
   }
-  sumTopPrcp = rbind(sumTopPrcp, year_sum_table)  
-}
-
-
-sumTopPrcpORID =  merge(sumTopPrcp, GHCNdStationsNE1901_ORID[, .(Station_ID, ORID)], by = "Station_ID", all.x = TRUE)
-
-
-# finding average EP by year, by grid cell
-
-meanAnnGridPrcp = data.table()
-for(i in years1950){
-  #print(i)
-  year_select = data.table()
-  year_select = sumTopPrcpORID[Year == i]
-  grid_mean_table = data.table()
-  for(j in unique(sumTopPrcpORID$ORID)){
-    #print(j)
-    grid_select = year_select[ORID == j]
-    grid_select = grid_select[ , meanGridPrcp :=mean(sumTopPrcp)]
-    grid_select = unique(grid_select, by = "meanGridPrcp")
-    grid_mean_table = rbind(grid_mean_table, grid_select)
+  
+  sumTopPrcpORID = merge(sumTopPrcp, GHCNdStationsNE1901_ORID[, .(Station_ID, ORID)], by = "Station_ID", all.x = TRUE)
+  
+  # finding average EP by year, by grid cell
+  meanAnnGridPrcp = data.table()
+  for(i in years1950){
+    year_select = sumTopPrcpORID[Year == i]
+    grid_mean_table = data.table()
+    for(j in unique(sumTopPrcpORID$ORID)){
+      grid_select = year_select[ORID == j]
+      if (nrow(grid_select) > 0) {
+        grid_select[, meanGridPrcp := mean(sumTopPrcp, na.rm = TRUE)]
+        grid_select = unique(grid_select, by = "meanGridPrcp")
+        grid_mean_table = rbind(grid_mean_table, grid_select, fill = TRUE)
+      }
+    }
+    meanAnnGridPrcp = rbind(meanAnnGridPrcp, grid_mean_table, fill = TRUE)
   }
-  meanAnnGridPrcp = rbind(meanAnnGridPrcp, grid_mean_table)  
-}
-
-# taking the average of all grid averages
-year_vs_prcp = data.table()
-for (i in years1950) {
-  year_select = data.table()
-  year_select = meanAnnGridPrcp[Year == i]
-  year_select = year_select[ , meanTotalPrcp:=mean(meanGridPrcp)]
-  year_select = unique(year_select, by = "Year")
-  year_vs_prcp = rbind(year_vs_prcp, year_select)
-}
-
-
-chgPcpt <- cpt.mean(year_vs_prcp$meanTotalPrcp,penalty="MBIC",pen.value=0,method="AMOC",Q=5,test.stat="Normal",class=TRUE,
-                    param.estimates=TRUE,minseglen=1)
-cpt_year = cpts(chgPcpt) + 1950
+  
+  # taking the average of all grid averages
+  year_vs_prcp = data.table()
+  for (i in years1950) {
+    year_select = meanAnnGridPrcp[Year == i]
+    if (nrow(year_select) > 0) {
+      year_select[, meanTotalPrcp := mean(meanGridPrcp, na.rm = TRUE)]
+      year_select = unique(year_select, by = "Year")
+      year_vs_prcp = rbind(year_vs_prcp, year_select, fill = TRUE)
+    }
+  }
+  
+  # Remove years with NA values before changepoint analysis
+  year_vs_prcp_clean = year_vs_prcp[!is.na(meanTotalPrcp)]
+  
+  chgPcpt <- cpt.mean(year_vs_prcp_clean$meanTotalPrcp, penalty = "MBIC", pen.value = 0, method = "AMOC", Q = 5, test.stat = "Normal", class = TRUE,
+                      param.estimates = TRUE, minseglen = 1)
+  cpt_year = cpts(chgPcpt) + 1950
 
 
 # Making a plot, incorporating changepoints (force study area 1996 cpt)
@@ -1071,16 +1071,16 @@ cpt_plot = ggplot() +
 p = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=1996, meanTotalPrcp], 
             alternative = "two.sided", var.equal = FALSE)$p.value
 
-t = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=2014, meanTotalPrcp], 
-           alternative = "two.sided", var.equal = FALSE)
+t = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=1996, meanTotalPrcp], 
+           alternative = "less", var.equal = FALSE)
 
 regression = summary(lm(year_vs_prcp[Year>=1996, meanTotalPrcp]~year_vs_prcp[Year>=1996, Year]))
 
 
  # return(cpt_plot)
  # return(p)
- # return(regression)
- return(t)
+ return(regression)
+ # return(t)
 
 }
 
@@ -1097,16 +1097,16 @@ regression = summary(lm(year_vs_prcp[Year>=1996, meanTotalPrcp]~year_vs_prcp[Yea
 # print(quadrantCpt(Coastal_S_stations))
 # 
 # select from Coastal_N_stations, Coastal_S_stations, Inland_N_stations, Inland_S_stations
-# cpt_IS = quadrantCpt(Inland_S_stations) + ggtitle("c) Inland South")
-# cpt_IN = quadrantCpt(Inland_N_stations) + ggtitle("a) Inland North")
-# cpt_CS = quadrantCpt(Coastal_S_stations) + ggtitle("d) Coastal South")
-# cpt_CN = quadrantCpt(Coastal_N_stations) + ggtitle("b) Coastal North")
-# 
-# summary_quadrant_cpt <- arrangeGrob(cpt_IN, cpt_CN, cpt_IS, cpt_CS,
-#                                    ncol = 2, nrow = 2,
-#                                    layout_matrix = rbind(c(1, 2), c(3, 4)),
-#                                    widths = c(1, 1))
-# ggsave('Figure4.tiff', plot = summary_quadrant_cpt, dpi = 600)
+cpt_IS = quadrantCpt(Inland_S_stations) + ggtitle("c) Inland South")
+cpt_IN = quadrantCpt(Inland_N_stations) + ggtitle("a) Inland North")
+cpt_CS = quadrantCpt(Coastal_S_stations) + ggtitle("d) Coastal South")
+cpt_CN = quadrantCpt(Coastal_N_stations) + ggtitle("b) Coastal North")
+
+summary_quadrant_cpt <- arrangeGrob(cpt_IN, cpt_CN, cpt_IS, cpt_CS,
+                                   ncol = 2, nrow = 2,
+                                   layout_matrix = rbind(c(1, 2), c(3, 4)),
+                                   widths = c(1, 1))
+ggsave('Figure4.tiff', plot = summary_quadrant_cpt, dpi = 600)
 
 ## results of above cpt analysis
 # Coastal_N_cpt: 1994 (before updating to 2023, was 1972)
@@ -1685,7 +1685,7 @@ chgQ <- cpt.mean(year_vs_peakQ_clean$meanTotalPeaks, penalty = "MBIC", pen.value
                  param.estimates = TRUE, minseglen = 1)
 plot(chgQ, type = "l", cpt.col = "darkblue", xlab = "Index", cpt.width = 4, ylab = "Normalized Extreme Discharge")
 cpt_year_Q = 1950 + cpts(chgQ)
-print(chgQ) # no changepoint detected
+print(chgQ)
 
 
 # Making a better plot, incorporating changepoints
