@@ -1,3 +1,11 @@
+setwd("C:/Users/richa/OneDrive/Documents/Dartmouth/Hydrology/EQ_2024")
+
+# full list of prcp records 1901-2021 on Dartmouth EARS "geo"
+# file_list <- list.files(path="//geo.dartmouth.edu/files/Research Groups/Fluvial_Lab/Richardson/by_station")
+
+# List of >80% records (1901-2021), extended thru 12/31/2023
+file_list <- list.files(path="C:/Users/richa/OneDrive/Documents/Dartmouth/Hydrology/EQ_2024/by_station_2023")
+
 # load required packages
 library(data.table)
 library(lubridate)
@@ -21,6 +29,7 @@ library(changepoint)
 library(rnaturalearth)
 library(rnaturalearthhires)
 library(circular)
+library(ggspatial)
 
 #### Create a table of all ghcnd prcp data for stations with more than 80% complete record from 1901-01-01 to 2023-12-31 ####
 
@@ -477,7 +486,7 @@ for(i in unique(TopPrcp$Station_ID)){
 
 # getting rid of irrelevant columns
 prcp_circular[ , c('Date', 'Value', 'V5', 'V6', 'V7', 'V8', 'Year', 'y_day', 'angle', 'angle_rad',
-                       'sine', 'cosine', 'mean_dir_rad', 'cosine_diff'):= NULL]
+                   'sine', 'cosine', 'mean_dir_rad', 'cosine_diff'):= NULL]
 
 # adding Lat and Long for QGIS stuff
 prcp_circular = prcp_circular %>% left_join(GHCNdStationsNE1901, by = "Station_ID")
@@ -510,7 +519,7 @@ for(i in unique(cptTable$Station_ID)){
   station_select[ , mean_dir_deg_post:=mean_dir_deg_post]
   station_select[ , cosine_diff_post:= cos(angle_rad - mean_dir_post)]
   station_select[ , R_mean_post:=sqrt(((mean(station_select[Year>cpt_year, cosine]))^2)+
-                                       ((mean(station_select[Year>cpt_year, sine]))^2))]
+                                        ((mean(station_select[Year>cpt_year, sine]))^2))]
   
   station_select = unique(station_select, by = 'Station_ID')
   prcp_circular_cpt = rbind(prcp_circular_cpt,station_select)
@@ -550,7 +559,7 @@ for(i in unique(TopPeaks$site_no)){
 
 # getting rid of irrelevant columns
 q_circular[ , c('Date', 'Flow', 'Flow_cd', 'peaks_tf', 'year', 'y_day', 'angle', 'angle_rad',
-                   'sine', 'cosine', 'mean_dir_rad', 'cosine_diff'):= NULL]
+                'sine', 'cosine', 'mean_dir_rad', 'cosine_diff'):= NULL]
 
 # adding Lat and Long for QGIS stuff
 q_circular = q_circular %>% left_join(hcdnGageTable, by = "site_no")
@@ -576,7 +585,7 @@ for(i in hcdnGageTable$site_no){
   site_select[ , mean_dir_deg_pre:=mean_dir_deg_pre]
   site_select[ , cosine_diff_pre:= cos(angle_rad - mean_dir_pre)]
   site_select[ , R_mean_pre:=sqrt(((mean(site_select[year<=cpt_year, cosine]))^2)+
-                                       ((mean(site_select[year<=cpt_year, sine]))^2))]
+                                    ((mean(site_select[year<=cpt_year, sine]))^2))]
   
   # post changepoint
   mean_dir_post=atan2((mean(site_select[year>cpt_year, sine])),mean(site_select[year>cpt_year, cosine]))
@@ -586,15 +595,15 @@ for(i in hcdnGageTable$site_no){
   site_select[ , mean_dir_deg_post:=mean_dir_deg_post]
   site_select[ , cosine_diff_post:= cos(angle_rad - mean_dir_post)]
   site_select[ , R_mean_post:=sqrt(((mean(site_select[year>cpt_year, cosine]))^2)+
-                                        ((mean(site_select[year>cpt_year, sine]))^2))]
+                                     ((mean(site_select[year>cpt_year, sine]))^2))]
   site_select = unique(site_select, by = 'site_no')
   q_circular_cpt = rbind(q_circular_cpt,site_select)
 }
 
 # getting rid of irrelevant columns
 q_circular_cpt[ , c('Date', 'Flow', 'Flow_cd', 'peaks_tf', 'year', 'y_day', 'angle', 'angle_rad',
-                       'sine', 'cosine', 'mean_dir_rad_pre', 'cosine_diff_pre', 'mean_dir_rad_post', 
-                       'cosine_diff_post'):= NULL]
+                    'sine', 'cosine', 'mean_dir_rad_pre', 'cosine_diff_pre', 'mean_dir_rad_post', 
+                    'cosine_diff_post'):= NULL]
 q_circular_cpt[ , delta_R:=R_mean_post - R_mean_pre]
 q_circular_cpt[ , delta_deg:=mean_dir_deg_post - mean_dir_deg_pre]
 
@@ -695,9 +704,9 @@ setorder(q_cpt_circ, by = 'site_no')
 hcdn_more_info_circ_cpt = hcdn_more_info[site_no %in% q_cpt_circ$site_no]
 setorder(hcdn_more_info_circ_cpt, by = 'site_no')
 q_cpt_circ = q_cpt_circ %>% mutate(Latitude = hcdn_more_info_circ_cpt$dec_lat_va, 
-                           Longitude = hcdn_more_info_circ_cpt$dec_long_va,
-                           Elevation = (hcdn_more_info_circ_cpt$alt_va)/3.281, 
-                           Drainage_area =(hcdn_more_info_circ_cpt$drain_area_va)*2.59 )
+                                   Longitude = hcdn_more_info_circ_cpt$dec_long_va,
+                                   Elevation = (hcdn_more_info_circ_cpt$alt_va)/3.281, 
+                                   Drainage_area =(hcdn_more_info_circ_cpt$drain_area_va)*2.59 )
 
 # Set up for rose diagrams
 TopPeaks[ , Month:=month(Date)]
@@ -852,7 +861,7 @@ prcp_circ_cox = prcp_circ %>% mutate(cox_lewis = cox_lewis_table_prcp$cox_lewis,
                                      cox_lewisMAM = cox_lewis_table_prcp$cox_lewisMAM,
                                      cox_lewisJJA = cox_lewis_table_prcp$cox_lewisJJA,
                                      cox_lewisSON = cox_lewis_table_prcp$cox_lewisSON
-                                                                              )
+)
 
 ## Q Peaks
 
@@ -926,12 +935,12 @@ setorder(cox_lewis_table_Q, by = 'site_no')
 setorder(q_circ, by = 'site_no')
 
 q_circ_cox = q_circ %>% mutate(cox_lewis = cox_lewis_table_Q$cox_lewis, 
-                                     cox_lewis_H1 = cox_lewis_table_Q$cox_lewis_H1,
-                                     cox_lewis_H2 = cox_lewis_table_Q$cox_lewis_H2,
-                                     cox_lewisDJF = cox_lewis_table_Q$cox_lewisDJF,
-                                     cox_lewisMAM = cox_lewis_table_Q$cox_lewisMAM,
-                                     cox_lewisJJA = cox_lewis_table_Q$cox_lewisJJA,
-                                     cox_lewisSON = cox_lewis_table_Q$cox_lewisSON
+                               cox_lewis_H1 = cox_lewis_table_Q$cox_lewis_H1,
+                               cox_lewis_H2 = cox_lewis_table_Q$cox_lewis_H2,
+                               cox_lewisDJF = cox_lewis_table_Q$cox_lewisDJF,
+                               cox_lewisMAM = cox_lewis_table_Q$cox_lewisMAM,
+                               cox_lewisJJA = cox_lewis_table_Q$cox_lewisJJA,
+                               cox_lewisSON = cox_lewis_table_Q$cox_lewisSON
 )
 q_circ_cox_sf = st_as_sf(q_circ_cox, coords = c("Longitude", "Latitude"), 
                          crs = 4326)
@@ -1052,36 +1061,36 @@ quadrantCpt = function(quadrant){
   chgPcpt <- cpt.mean(year_vs_prcp_clean$meanTotalPrcp, penalty = "MBIC", pen.value = 0, method = "AMOC", Q = 5, test.stat = "Normal", class = TRUE,
                       param.estimates = TRUE, minseglen = 1)
   cpt_year = cpts(chgPcpt) + 1950
-
-
-# Making a plot, incorporating changepoints (force study area 1996 cpt)
-cpt_plot = ggplot() + 
-  geom_point(data = year_vs_prcp, aes(x =Year , y = meanTotalPrcp/10), color = 'black', pch = 1, lwd = 1.5) +
-  geom_line(data = year_vs_prcp, aes(x =Year , y = meanTotalPrcp/10), color = 'darkgrey', lwd = 0.6) +
-  # geom_smooth(data = year_vs_prcp[Year %between% c(1950,cpt_year)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'gold2') +
-  # geom_smooth(data = year_vs_prcp[Year %between% c(cpt_year,2023)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'purple') +
-  geom_smooth(data = year_vs_prcp[Year %between% c(1950,1996)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'gold2') +
-  geom_smooth(data = year_vs_prcp[Year %between% c(1996,2023)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'purple') +
-  labs(title = "Extreme precipitation trends before and after changepoint", x = "Year", y = "Extreme Precipitation (mm)")+
-  theme_bw()+
-  theme(axis.title = element_text(size = 8),
-        plot.title = element_text(size = 10))
-
-
-p = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=1996, meanTotalPrcp], 
-            alternative = "two.sided", var.equal = FALSE)$p.value
-
-t = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=1996, meanTotalPrcp], 
-           alternative = "less", var.equal = FALSE)
-
-regression = summary(lm(year_vs_prcp[Year>=1996, meanTotalPrcp]~year_vs_prcp[Year>=1996, Year]))
-
-
- # return(cpt_plot)
- # return(p)
- return(regression)
- # return(t)
-
+  
+  
+  # Making a plot, incorporating changepoints (force study area 1996 cpt)
+  cpt_plot = ggplot() + 
+    geom_point(data = year_vs_prcp, aes(x =Year , y = meanTotalPrcp/10), color = 'black', pch = 1, lwd = 1.5) +
+    geom_line(data = year_vs_prcp, aes(x =Year , y = meanTotalPrcp/10), color = 'darkgrey', lwd = 0.6) +
+    # geom_smooth(data = year_vs_prcp[Year %between% c(1950,cpt_year)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'gold2') +
+    # geom_smooth(data = year_vs_prcp[Year %between% c(cpt_year,2023)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'purple') +
+    geom_smooth(data = year_vs_prcp[Year %between% c(1950,1996)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'gold2') +
+    geom_smooth(data = year_vs_prcp[Year %between% c(1996,2023)], aes(x = Year, y = meanTotalPrcp/10), method = lm, color = 'purple') +
+    labs(title = "Extreme precipitation trends before and after changepoint", x = "Year", y = "Extreme Precipitation (mm)")+
+    theme_bw()+
+    theme(axis.title = element_text(size = 8),
+          plot.title = element_text(size = 10))
+  
+  
+  p = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=1996, meanTotalPrcp], 
+             alternative = "two.sided", var.equal = FALSE)$p.value
+  
+  t = t.test(year_vs_prcp[Year<1996, meanTotalPrcp], year_vs_prcp[Year>=1996, meanTotalPrcp], 
+             alternative = "less", var.equal = FALSE)
+  
+  regression = summary(lm(year_vs_prcp[Year>=1996, meanTotalPrcp]~year_vs_prcp[Year>=1996, Year]))
+  
+  
+  return(cpt_plot)
+  # return(p)
+  # return(regression)
+  # return(t)
+  
 }
 
 # # return p values
@@ -1103,10 +1112,11 @@ cpt_CS = quadrantCpt(Coastal_S_stations) + ggtitle("d) Coastal South")
 cpt_CN = quadrantCpt(Coastal_N_stations) + ggtitle("b) Coastal North")
 
 summary_quadrant_cpt <- arrangeGrob(cpt_IN, cpt_CN, cpt_IS, cpt_CS,
-                                   ncol = 2, nrow = 2,
-                                   layout_matrix = rbind(c(1, 2), c(3, 4)),
-                                   widths = c(1, 1))
-ggsave('Figure4.tiff', plot = summary_quadrant_cpt, dpi = 600)
+                                    ncol = 2, nrow = 2,
+                                    layout_matrix = rbind(c(1, 2), c(3, 4)),
+                                    widths = c(1, 1))
+ggsave('Figure4.tiff', plot = summary_quadrant_cpt, dpi = 900)
+ggsave('Figure4.pdf', plot = summary_quadrant_cpt)
 
 ## results of above cpt analysis
 # Coastal_N_cpt: 1994 (before updating to 2023, was 1972)
@@ -1224,10 +1234,11 @@ RoseDiagram = function(table_A, table_B){
           plot.title = element_text(hjust = 0.5)) +
     # scale_y_continuous(breaks = seq(0, 10, 1), limits = c(0,7)) # for QCS
     # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,15)) # for QIS
-    scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,13)) # for QIN
-    # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,9)) # for QCN
-
- 
+   scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,13)) # for QIN
+  # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,9)) # for QCN
+    # scale_y_continuous(breaks = seq(0, 10, 1), limits = c(0,6)) # for PIN
+  
+  
   B_Table = table_B
   R_B=round(sqrt(((mean(B_Table$cosine))^2)+((mean(B_Table$sine))^2)), digits = 3)
   
@@ -1255,8 +1266,9 @@ RoseDiagram = function(table_A, table_B){
           plot.title = element_text(hjust = 0.5))  +
     # scale_y_continuous(breaks = seq(0, 10, 1), limits = c(0,7)) # for QCS
     # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,15)) # for QIS
-    scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,13)) # for QIN
-    # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,9)) # for QCN
+   scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,13)) # for QIN
+  # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,9)) # for QCN
+    # scale_y_continuous(breaks = seq(0, 10, 1), limits = c(0,6)) # for PIN
   
   Rose_C = ggplot() +
     geom_histogram(data=A_Table, aes(x = angle_rad, y = after_stat(count)/num_years_post), binwidth = .3,
@@ -1270,11 +1282,11 @@ RoseDiagram = function(table_A, table_B){
       plot.title = element_text(hjust = 0.5),
       axis.title.x = element_text(size = 10)
     ) +
-  # scale_y_continuous(breaks = seq(0, 10, 1), limits = c(0,7)) # for QCS
-  # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,15)) # for QIS
-  scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,13)) # for QIN
+    # scale_y_continuous(breaks = seq(0, 10, 1), limits = c(0,7)) # for QCS
+    # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,15)) # for QIS
+    scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,13)) # for QIN
   # scale_y_continuous(breaks = seq(0, 16, 4), limits = c(0,9)) # for QCN
-
+  
   # for each bin, identify the percent of the total distribution it occupies in each region
   # pre and post-changepoint
   # Coastal_N_cpt :1972
@@ -1320,8 +1332,9 @@ RoseDiagram = function(table_A, table_B){
           , plot.margin = ggplot2::margin(0, 0, 2, 2, "pt"),
           plot.title = element_text(hjust = 0.5)
     ) +
-  scale_y_continuous(breaks = seq(-10, 10, 1), limits = c(-3,3)) # for all others
-    #scale_y_continuous(breaks = seq(-10, 10, 2), limits = c(-5,4)) # for IS
+   scale_y_continuous(breaks = seq(-10, 10, 1), limits = c(-3,3)) # for all others
+  #scale_y_continuous(breaks = seq(-10, 10, 2), limits = c(-5,4)) # for IS
+  # scale_y_continuous(breaks = seq(-10, 10, 1), limits = c(-1,3)) # for PIN
   
   
   Change1 = ggplot(bin_rose_q, aes(x = Bin, y = freq_change, fill = sign)) +
@@ -1339,12 +1352,14 @@ RoseDiagram = function(table_A, table_B){
           plot.title = element_text(hjust = 0.5)
     )
   #
-    scale_y_continuous(breaks = seq(-6, 3, 2), limits = c(-5,4))
+  scale_y_continuous(breaks = seq(-6, 3, 2), limits = c(-5,4))
   
   
   #  Change <- Change +
   #    scale_y_continuous(breaks = seq(-4, 2, 2))
   # # 
+  Rose_A = Rose_A + coord_polar(start = -6.5 * pi / 180)
+  Rose_B = Rose_B + coord_polar(start = -6.5 * pi / 180)
   Rose_select = ggarrange(Rose_A, Rose_B, Change, ncol = 3)
   
   Rose_change = Change1
@@ -1356,7 +1371,7 @@ RoseDiagram = function(table_A, table_B){
 }
 
 # select region here
-Rose = RoseDiagram(QINpre, QINpost)
+Rose = RoseDiagram(PINpre, PINpost)
 Rose
 
 # may need to change scale limits depending on the quadrant
@@ -1369,7 +1384,7 @@ Rose +
   annotation_custom(grob1, xmin = 0.5, xmax = 0.5, ymin = 1, ymax = .9) +
   # annotation_custom(grob2, xmin = 0.5, xmax = 0.5, ymin = 1, ymax = 1) +
   theme(plot.margin = margin(2, 1, 0, 1, "cm"))
-ggsave('sample_rose_QIN.tiff', dpi = 600)
+ggsave('sample_rose_QIN.tiff', dpi = 900)
 
 
 ## summary plot (P)
@@ -1387,9 +1402,9 @@ Rose4 = RoseDiagram(PCS, PCS) + ggtitle("d) Coastal South") +
 
 
 summary_circ_P <- arrangeGrob(Rose2, Rose1, Rose3, Rose4,
-                                   ncol = 2, nrow = 2,
-                                   layout_matrix = rbind(c(1, 2), c(3, 4)),
-                                   widths = c(1, 1))
+                              ncol = 2, nrow = 2,
+                              layout_matrix = rbind(c(1, 2), c(3, 4)),
+                              widths = c(1, 1))
 
 ggsave('summary_circ_P.png', plot = summary_circ_P)
 
@@ -1409,12 +1424,12 @@ Rose4 = RoseDiagram(QCSpre, QCSpost) + ggtitle(bquote("d) Coastal South, " ~ bar
   theme(plot.margin = ggplot2::margin(0, 0, 0, 0, "pt"), plot.title = element_text(size = 8))
 
 
- summary_circ_change <- arrangeGrob(Rose2, Rose1, Rose3, Rose4,
-                                    ncol = 2, nrow = 2,
-                                    layout_matrix = rbind(c(1, 2), c(3, 4)),
-                                    widths = c(1, 1))
- 
- ggsave('summary_circ_change.png', plot = summary_circ_change)
+summary_circ_change <- arrangeGrob(Rose2, Rose1, Rose3, Rose4,
+                                   ncol = 2, nrow = 2,
+                                   layout_matrix = rbind(c(1, 2), c(3, 4)),
+                                   widths = c(1, 1))
+
+ggsave('summary_circ_change.png', plot = summary_circ_change)
 
 ## More circular stats stuff below
 
@@ -1422,43 +1437,43 @@ Rose4 = RoseDiagram(QCSpre, QCSpost) + ggtitle(bquote("d) Coastal South, " ~ bar
 # pre and post changepoint for each of the four regions, see statistical significance.
 # Q
 # repeat this process for each of the 4 regions
- circ_t_test = function(region){
-   
-   region_sites = region
- 
-q_circ_fn_table = data.table()
-for (i in region_sites$site_no) {
-  site_select = TopPeaks[site_no == i]
-  mean_sine_pre = with(site_select, mean(sine[year <= 1996]))
-  mean_cosine_pre = with(site_select, mean(cosine[year <= 1996]))
-
-  mean_dir_pre=atan2(mean_sine_pre, mean_cosine_pre)
-  mean_dir_deg_pre =mean_dir_pre * (180/pi)
-  if(mean_dir_deg_pre<0) {mean_dir_deg_pre = mean_dir_deg_pre + (360)}
-  site_select[ , mean_dir_rad_pre:=mean_dir_pre]
-  site_select[ , mean_dir_deg_pre:=mean_dir_deg_pre]
-  site_select[ , R_mean_pre:=sqrt(((mean_cosine_pre)^2)+((mean_sine_pre)^2))]
-
-
-  mean_sine_post = with(site_select, mean(sine[year > 1996]))
-  mean_cosine_post = with(site_select, mean(cosine[year > 1996]))
-
-  mean_dir_post=atan2(mean_sine_post, mean_cosine_post)
-  mean_dir_deg_post =mean_dir_post * (180/pi)
-  if(mean_dir_deg_post<0) {mean_dir_deg_post = mean_dir_deg_post + (360)}
-  site_select[ , mean_dir_rad_post:=mean_dir_post]
-  site_select[ , mean_dir_deg_post:=mean_dir_deg_post]
-  site_select[ , R_mean_post:=sqrt(((mean_cosine_post)^2)+((mean_sine_post)^2))]
-
-
-  site_select = unique(site_select, by = 'site_no')
-  q_circ_fn_table = rbind(q_circ_fn_table,site_select)
+circ_t_test = function(region){
+  
+  region_sites = region
+  
+  q_circ_fn_table = data.table()
+  for (i in region_sites$site_no) {
+    site_select = TopPeaks[site_no == i]
+    mean_sine_pre = with(site_select, mean(sine[year <= 1996]))
+    mean_cosine_pre = with(site_select, mean(cosine[year <= 1996]))
+    
+    mean_dir_pre=atan2(mean_sine_pre, mean_cosine_pre)
+    mean_dir_deg_pre =mean_dir_pre * (180/pi)
+    if(mean_dir_deg_pre<0) {mean_dir_deg_pre = mean_dir_deg_pre + (360)}
+    site_select[ , mean_dir_rad_pre:=mean_dir_pre]
+    site_select[ , mean_dir_deg_pre:=mean_dir_deg_pre]
+    site_select[ , R_mean_pre:=sqrt(((mean_cosine_pre)^2)+((mean_sine_pre)^2))]
+    
+    
+    mean_sine_post = with(site_select, mean(sine[year > 1996]))
+    mean_cosine_post = with(site_select, mean(cosine[year > 1996]))
+    
+    mean_dir_post=atan2(mean_sine_post, mean_cosine_post)
+    mean_dir_deg_post =mean_dir_post * (180/pi)
+    if(mean_dir_deg_post<0) {mean_dir_deg_post = mean_dir_deg_post + (360)}
+    site_select[ , mean_dir_rad_post:=mean_dir_post]
+    site_select[ , mean_dir_deg_post:=mean_dir_deg_post]
+    site_select[ , R_mean_post:=sqrt(((mean_cosine_post)^2)+((mean_sine_post)^2))]
+    
+    
+    site_select = unique(site_select, by = 'site_no')
+    q_circ_fn_table = rbind(q_circ_fn_table,site_select)
+  }
+  
+  return(q_circ_fn_table)
+  
 }
 
-return(q_circ_fn_table)
-
- }
- 
 q_circ_IN = circ_t_test(Inland_N_sites)
 q_circ_IN[ , Region:="inland_north"]
 q_circ_CN = circ_t_test(Coastal_N_sites)
@@ -1482,11 +1497,11 @@ for (i in unique(q_circ_regions$Region)) {
   region_select = q_circ_regions[Region == i]
   # R
   region_select[ , R_t_test_p := t.test(region_select$R_mean_pre, region_select$R_mean_post, 
-                                       alternative = "two.sided", var.equal = FALSE)$p.value]
+                                        alternative = "two.sided", var.equal = FALSE)$p.value]
   region_select[ , R_diff:= mean(region_select$R_mean_post) - mean(region_select$R_mean_pre)]
   # vector mean date
   region_select[ , date_t_test_p := t.test(region_select$mean_dir_deg_pre, region_select$mean_dir_deg_post, 
-                                        alternative = "two.sided", var.equal = FALSE)$p.value]
+                                           alternative = "two.sided", var.equal = FALSE)$p.value]
   region_select[ , date_diff:= mean(region_select$mean_dir_deg_post) - mean(region_select$mean_dir_deg_pre)]
   
   region_select = unique(region_select, by = 'Region')
@@ -1496,90 +1511,90 @@ for (i in unique(q_circ_regions$Region)) {
 
 
 #### Magnitude ####
-  # normalize all peak flows by Q2
-  Qtable[ , Q2:=Qtable$`2 yr (cms)`]
-  
-  TopPeaks_norm = data.table()
-  for (i in unique(Qtable$site_no)){
-    site_select = TopPeaks[site_no == i]
-    Q2_select = Qtable[site_no == i, Q2]
-    site_select[ , Flow_cms:= Flow*0.028316832]
-    site_select[ , Flow_norm:=Flow_cms / Q2_select]
-    TopPeaks_norm = rbind(TopPeaks_norm, site_select)
+# normalize all peak flows by Q2
+Qtable[ , Q2:=Qtable$`2 yr (cms)`]
+
+TopPeaks_norm = data.table()
+for (i in unique(Qtable$site_no)){
+  site_select = TopPeaks[site_no == i]
+  Q2_select = Qtable[site_no == i, Q2]
+  site_select[ , Flow_cms:= Flow*0.028316832]
+  site_select[ , Flow_norm:=Flow_cms / Q2_select]
+  TopPeaks_norm = rbind(TopPeaks_norm, site_select)
+}
+
+## assign region and season columns to TopPeaks_norm table
+# assigning seasons
+TopPeaks_norm[ , Month:=month(Date)]
+TopPeaks_norm[(Month) < 6 | (Month) > 10, Season:="Cold"]
+TopPeaks_norm[(Month) > 5 & (Month) < 11, Season:="Warm"]
+TopPeaks_norm = setorder(TopPeaks_norm, by = 'site_no')
+q_circ_regions = setorder(q_circ_regions, by = 'site_no')
+
+# assigning regions
+TopPeaks_region = data.table()
+for (i in unique(TopPeaks_norm$site_no)){
+  site_select = TopPeaks_norm[site_no == i]
+  region_select = q_circ_regions[site_no == i, 'Region']
+  site_select[ , Region:=region_select$Region]
+  TopPeaks_region = rbind(TopPeaks_region, site_select)
+}
+
+
+# testing to see what happens without WV
+# TopPeaks_noWV = data.table()
+# site_list_noWV = (q_circ[state != 'WV'])
+# site_list_noWV[ , site_no:=paste0("0", site_list_noWV$site_no)]
+# TopPeaks_noWV = TopPeaks[site_no%in%site_list_noWV$site_no]
+# TopPeaks = TopPeaks_noWV
+# 
+
+TopPeaks = TopPeaks_region
+rm(TopPeaks_region)
+#rm(TopPeaks_norm)
+
+TopPeaksH1 = TopPeaks[Season == "Cold"]
+TopPeaksH1[,Year:=paste0(TopPeaksH1$year, ".1")]
+TopPeaksH2 = TopPeaks[Season == "Warm"]
+TopPeaksH2[,Year:=paste0(TopPeaksH2$year, ".2")]
+
+TopPeaks = rbind(TopPeaksH1, TopPeaksH2)
+setorder(TopPeaks, by = 'site_no', "Date")
+rm(TopPeaksH1)
+rm(TopPeaksH2)
+
+## Find med and max flow per region per year&season
+
+Magnitude_table = data.table()
+for (i in unique(TopPeaks$Region)){
+  region_select = TopPeaks[Region == i]
+  setorder(region_select, by = 'Year')
+  summary_table = data.table()
+  #print(i)
+  for (j in unique(TopPeaks$Year)){
+    
+    #print(j)
+    year_select = region_select[Year == j]
+    year_select[ , Med_flow := median(Flow_norm)]
+    year_select[ , Max_flow := max(Flow_norm)]
+    year_select = unique(year_select, by = 'Max_flow')
+    year_select = year_select[ ,c('Season', 'Region', 'year', 'Max_flow', 'Med_flow')]
+    summary_table = rbind(summary_table, year_select)
+    
   }
-  
-  ## assign region and season columns to TopPeaks_norm table
-  # assigning seasons
-  TopPeaks_norm[ , Month:=month(Date)]
-  TopPeaks_norm[(Month) < 6 | (Month) > 10, Season:="Cold"]
-  TopPeaks_norm[(Month) > 5 & (Month) < 11, Season:="Warm"]
-  TopPeaks_norm = setorder(TopPeaks_norm, by = 'site_no')
-  q_circ_regions = setorder(q_circ_regions, by = 'site_no')
-  
-  # assigning regions
-  TopPeaks_region = data.table()
-  for (i in unique(TopPeaks_norm$site_no)){
-    site_select = TopPeaks_norm[site_no == i]
-    region_select = q_circ_regions[site_no == i, 'Region']
-    site_select[ , Region:=region_select$Region]
-    TopPeaks_region = rbind(TopPeaks_region, site_select)
-  }
-  
-  
-  # testing to see what happens without WV
-  # TopPeaks_noWV = data.table()
-  # site_list_noWV = (q_circ[state != 'WV'])
-  # site_list_noWV[ , site_no:=paste0("0", site_list_noWV$site_no)]
-  # TopPeaks_noWV = TopPeaks[site_no%in%site_list_noWV$site_no]
-  # TopPeaks = TopPeaks_noWV
-  # 
-  
-  TopPeaks = TopPeaks_region
-  rm(TopPeaks_region)
-  #rm(TopPeaks_norm)
-  
-  TopPeaksH1 = TopPeaks[Season == "Cold"]
-  TopPeaksH1[,Year:=paste0(TopPeaksH1$year, ".1")]
-  TopPeaksH2 = TopPeaks[Season == "Warm"]
-  TopPeaksH2[,Year:=paste0(TopPeaksH2$year, ".2")]
-  
-  TopPeaks = rbind(TopPeaksH1, TopPeaksH2)
-  setorder(TopPeaks, by = 'site_no', "Date")
-  rm(TopPeaksH1)
-  rm(TopPeaksH2)
-  
-  ## Find med and max flow per region per year&season
-  
-  Magnitude_table = data.table()
-  for (i in unique(TopPeaks$Region)){
-    region_select = TopPeaks[Region == i]
-    setorder(region_select, by = 'Year')
-    summary_table = data.table()
-    #print(i)
-    for (j in unique(TopPeaks$Year)){
-      
-      #print(j)
-      year_select = region_select[Year == j]
-      year_select[ , Med_flow := median(Flow_norm)]
-      year_select[ , Max_flow := max(Flow_norm)]
-      year_select = unique(year_select, by = 'Max_flow')
-      year_select = year_select[ ,c('Season', 'Region', 'year', 'Max_flow', 'Med_flow')]
-      summary_table = rbind(summary_table, year_select)
-      
-    }
-    Magnitude_table = rbind(Magnitude_table, summary_table)
-  }
-  
-  ## seeing significance of trend
-  magnitude_significance = function(region_select, season_select, outlier) {
-    select_table = Magnitude_table[Region == region_select & Season == season_select & year !=outlier]
-    test1 = lm(select_table$Max_flow~select_table$year)
-    return (summary(test1))
-  }
-  
+  Magnitude_table = rbind(Magnitude_table, summary_table)
+}
+
+## seeing significance of trend
+magnitude_significance = function(region_select, season_select, outlier) {
+  select_table = Magnitude_table[Region == region_select & Season == season_select & year !=outlier]
+  test1 = lm(select_table$Max_flow~select_table$year)
+  return (summary(test1))
+}
+
 magnitude_significance("inland_north", "Warm", 0)
 ## only inland_north, Warm is significant
-  
+
 
 cold_mag_IN = ggplot(data = Magnitude_table[Region == 'inland_north' & Season == 'Cold']) + 
   geom_point(aes(x =year , y = Max_flow), col = 'blue4', size = 2.9)+
@@ -1600,7 +1615,8 @@ warm_mag_IN = ggplot(data = Magnitude_table[Region == 'inland_north' & Season ==
   theme(legend.position = "none")
 
 ggarrange(cold_mag_IN, warm_mag_IN, ncol = 2)
-ggsave(filename = 'Figure11.tiff', width = 10, height = 3.2, dpi = 600)
+ggsave(filename = 'Figure11.tiff', width = 10, height = 3.2, dpi = 900)
+ggsave(filename = 'Figure11.pdf', width = 10, height = 3.2)
 
 
 #### Other Figures (Graphs) ####
@@ -1708,7 +1724,8 @@ p_time_series = ggplot() +
 ggarrange(p_time_series, q_time_series, ncol = 2)
 
 # adjust the size of the output device to control overall aspect ratio
-ggsave("Figure3.tiff", width = 10, height = 3.2, dpi = 600)
+ggsave("Figure3.pdf", width = 10, height = 3.2)
+ggsave("Figure3.tiff", width = 10, height = 3.2, dpi = 900)
 
 
 
@@ -1760,9 +1777,10 @@ ggplot(daily_WhiteRiver_2020, aes(x = Date, y = Flow*0.028316832)) +
   scale_color_manual(values = colors)+
   labs(color = "", y = 'Discharge (cms)', x = 'Date')+
   theme_bw()+
-  theme(plot.margin = ggplot2::margin(0, 0, 0, 0, "pt"))+
-  ggtitle('White River, 2020')
-ggsave(file = 'Figure2.tiff', dpi = 600)
+  theme(plot.margin = ggplot2::margin(10, 10, 10, 10, "pt"))+
+  labs(title = paste("White River at West Hardford, VT, 2020", "\nUSGS 01144000"))
+ggsave(file = 'Figure2.pdf')
+ggsave(file = "Figure2.tiff", dpi = 900)
 
 #### Other Figures (Maps) #### 
 ## quadrant breakdown
@@ -1824,83 +1842,83 @@ ggplot() +
         panel.grid.minor = element_blank(),
         panel.background = element_rect(fill = 'Gray85', colour = NA))+
   labs(title = "Northeastern Quadrants")
- 
-  
-    df_above42 <- data.frame(
-          lon=c(-60,-60,-100,-100), 
-          lat=c(42,70,70,42))
-  
-  polygon_above42 <- df_above42 %>%
-    st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
-    summarise(geometry = st_combine(geometry)) %>%
-    st_cast("POLYGON")
-  # Convert to data frame for ggplot
-  polygon_df <- st_sf(geometry = polygon_above42)
-  
-  # Plot using ggplot
-  ggplot() +
-    geom_sf(data = polygon_df, fill = "lightblue", color = "black") +
-    theme_minimal() +
-    labs(title = "Rectangular Polygon Above 42 Latitude Line")
-  
-  polygon_above42 = st_transform(polygon_above42, 3857)
-  
 
-  # Intersect Coastal_NE with the north_rectangle
-  intersected_area2 <- st_intersection(Coastal_NE, polygon_above42)
-  
-  # Convert to data frame for ggplot
-  Coastal_N_sf <- st_as_sf(intersected_area2)
-  
-  # Find the area that doesn't intersect
-  non_intersected_area2 <- st_difference(Coastal_NE, polygon_above42)
-  
-  # Convert to data frame for ggplot
-  Coastal_S_sf <- st_as_sf(non_intersected_area2)
-  
-  
-  
-  
-  # Do the same with Inland_NE
-  intersected_area3 <- st_intersection(Inland_NE, polygon_above42)
-  
-  # Convert to data frame for ggplot
-  Inland_N_sf <- st_as_sf(intersected_area3)
-  
-  # Find the area that doesn't intersect
-  non_intersected_area3 <- st_difference(Inland_NE, polygon_above42)
-  
-  # Convert to data frame for ggplot
-  Inland_S_sf <- st_as_sf(non_intersected_area3)
-  
-  
 
-  ##  include (in background) all relevant political boundaries
-  # Load the world dataset
-  world <- ne_countries(scale = "medium", returnclass = "sf")
-  
-  # Subset for the US and Canada
-  countries_US_CA <- world[world$iso_a3 %in% c("USA", "CAN"), ]
-  
-  # Set the CRS to 4326
-  countries_US_CA <- st_transform(countries_US_CA, 3857)
-  
-  # get great lakes
-  # Get world boundaries
-  great_lakes <- st_read('ne_10m_lakes.shp')
-  
-  # Set CRS to 3857
-  great_lakes_sf <- st_transform(great_lakes, 3857) 
-  
-  df_study_area <- data.frame(  
-  lon=c(-66,-66,-84,-84), 
-  lat=c(36.5,48,48,36.5))
+df_above42 <- data.frame(
+  lon=c(-60,-60,-100,-100), 
+  lat=c(42,70,70,42))
 
-  study_area <- df_study_area %>%
+polygon_above42 <- df_above42 %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
   summarise(geometry = st_combine(geometry)) %>%
   st_cast("POLYGON")
-  
+# Convert to data frame for ggplot
+polygon_df <- st_sf(geometry = polygon_above42)
+
+# Plot using ggplot
+ggplot() +
+  geom_sf(data = polygon_df, fill = "lightblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Rectangular Polygon Above 42 Latitude Line")
+
+polygon_above42 = st_transform(polygon_above42, 3857)
+
+
+# Intersect Coastal_NE with the north_rectangle
+intersected_area2 <- st_intersection(Coastal_NE, polygon_above42)
+
+# Convert to data frame for ggplot
+Coastal_N_sf <- st_as_sf(intersected_area2)
+
+# Find the area that doesn't intersect
+non_intersected_area2 <- st_difference(Coastal_NE, polygon_above42)
+
+# Convert to data frame for ggplot
+Coastal_S_sf <- st_as_sf(non_intersected_area2)
+
+
+
+
+# Do the same with Inland_NE
+intersected_area3 <- st_intersection(Inland_NE, polygon_above42)
+
+# Convert to data frame for ggplot
+Inland_N_sf <- st_as_sf(intersected_area3)
+
+# Find the area that doesn't intersect
+non_intersected_area3 <- st_difference(Inland_NE, polygon_above42)
+
+# Convert to data frame for ggplot
+Inland_S_sf <- st_as_sf(non_intersected_area3)
+
+
+
+##  include (in background) all relevant political boundaries
+# Load the world dataset
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+# Subset for the US and Canada
+countries_US_CA <- world[world$iso_a3 %in% c("USA", "CAN"), ]
+
+# Set the CRS to 4326
+countries_US_CA <- st_transform(countries_US_CA, 3857)
+
+# get great lakes
+# Get world boundaries
+great_lakes <- st_read('ne_10m_lakes.shp')
+
+# Set CRS to 3857
+great_lakes_sf <- st_transform(great_lakes, 3857) 
+
+df_study_area <- data.frame(  
+  lon=c(-66,-66,-84,-84), 
+  lat=c(36.5,48,48,36.5))
+
+study_area <- df_study_area %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("POLYGON")
+
 # Convert to data frame for ggplot
 area_df <- st_sf(geometry = study_area)
 
@@ -1921,41 +1939,109 @@ Inland_S_sf = st_union(Inland_S_sf)
 Coastal_N_sf = st_union(Coastal_N_sf)
 Coastal_S_sf = st_union(Coastal_S_sf)
 
-##  final plot
- study_area_q = ggplot() +
-    geom_sf(data = US_CA_df, color = "grey70", fill = "grey85")+
-    geom_sf(data = lakes_df, color = "grey70", fill = "grey92")+
-    geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
-    geom_sf(data = Inland_N_sf, color = "transparent", fill = "#f0f9e8", alpha = 0.5) +
-    geom_sf(data = Coastal_N_sf, color = "transparent", fill = "#bae4bc", alpha = 0.7) +
-    geom_sf(data = Inland_S_sf, color = "transparent", fill = "#7bccc4", alpha = 0.7) +
-    geom_sf(data = Coastal_S_sf, color = "transparent", fill = "#2b8cbe", alpha = 0.5) +
-    geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
-    geom_sf(data = q_circ, color = "black", size = 1.2) +
-    theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_rect(fill = 'grey92', colour = NA))+
-    labs(title = "a) Stream Gages (n=80)")
+## Final plot
+study_area_q = ggplot() +
+  geom_sf(data = US_CA_df, color = "grey70", fill = "grey85") +
+  geom_sf(data = lakes_df, color = "grey70", fill = "grey92") +
+  geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
+  geom_sf(data = Inland_N_sf, color = "transparent", fill = "#f0f9e8", alpha = 0.5) +
+  geom_sf(data = Coastal_N_sf, color = "transparent", fill = "#bae4bc", alpha = 0.7) +
+  geom_sf(data = Inland_S_sf, color = "transparent", fill = "#7bccc4", alpha = 0.7) +
+  geom_sf(data = Coastal_S_sf, color = "transparent", fill = "#2b8cbe", alpha = 0.5) +
+  geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
+  geom_sf(data = q_circ, color = "black", size = 1.2) +
+  labs(title = "a) Stream Gages (n=80)") +
+  ggspatial::annotation_scale(
+    location = "br",  # Bottom right
+    bar_cols = c("black", "white"),  # Simple black and white bar
+    line_width = 0.5,  # Thinner lines for the scale
+    style = "ticks"  # Simpler style with ticks
+  ) +
+  ggspatial::annotation_north_arrow(
+    location = "br", which_north = "true",
+    pad_x = unit(0, "in"), pad_y = unit(0.35, "in"),  # Adjusted for bottom right placement
+    height = unit(0.25, "in"), width = unit(0.25, "in"),  # Smaller size
+    style = ggspatial::north_arrow_minimal(
+      fill = "black",  # Black fill for the arrow
+      line_col = "black",
+      text_size = 8
+    )
+  ) +
+  coord_sf(crs = "+proj=longlat +datum=WGS84", expand = FALSE) +  # Include lat/long on axes
+  theme(
+    axis.text = element_text(size = 8, family = "sans", color = "black"),  # Axis text styling
+    axis.text.x = element_text(margin = margin(t = 5), angle = 0, color = "black"),  # Adjustments for better spacing and color
+    axis.text.y = element_text(margin = margin(r = 5), color = "black"),  # Y-axis text color
+    axis.ticks = element_line(color = "black"),  # Add tick marks color
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = 'grey92', colour = NA),
+    plot.margin = margin(10, 10, 10, 10)  # Adjust margins for consistent sizing
+  ) +
   
-  study_area_p = ggplot() +
-    geom_sf(data = US_CA_df, color = "grey70", fill = "grey85")+
-    geom_sf(data = lakes_df, color = "grey70", fill = "grey92")+
-    geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
-    geom_sf(data = Inland_N_sf, color = "transparent", fill = "#f0f9e8", alpha = 0.5) +
-    geom_sf(data = Coastal_N_sf, color = "transparent", fill = "#bae4bc", alpha = 0.7) +
-    geom_sf(data = Inland_S_sf, color = "transparent", fill = "#7bccc4", alpha = 0.7) +
-    geom_sf(data = Coastal_S_sf, color = "transparent", fill = "#2b8cbe", alpha = 0.5) +
-    geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
-    geom_sf(data = prcp_circ, color = "black", size = 1.2) +
-    theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.background = element_rect(fill = 'grey92', colour = NA))+
-    labs(title = "b) Precipitation Gages (n=123)")
+  scale_x_continuous(
+    labels = function(x) paste0(abs(x), "°W")  # No negative signs, add "W"
+  ) +
+  scale_y_continuous(
+    labels = function(y) paste0(y, "°N")  # Add "N" to latitude
+  )
 
-  ggarrange(study_area_q, study_area_p, ncol = 2)
-ggsave('Figure1.pdf', dpi = 600)
+study_area_p = ggplot() +
+  geom_sf(data = US_CA_df, color = "grey70", fill = "grey85")+
+  geom_sf(data = lakes_df, color = "grey70", fill = "grey92")+
+  geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
+  geom_sf(data = Inland_N_sf, color = "transparent", fill = "#f0f9e8", alpha = 0.5) +
+  geom_sf(data = Coastal_N_sf, color = "transparent", fill = "#bae4bc", alpha = 0.7) +
+  geom_sf(data = Inland_S_sf, color = "transparent", fill = "#7bccc4", alpha = 0.7) +
+  geom_sf(data = Coastal_S_sf, color = "transparent", fill = "#2b8cbe", alpha = 0.5) +
+  geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
+  geom_sf(data = prcp_circ, color = "black", size = 1.2) +
+  theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = 'grey92', colour = NA))+
+  labs(title = "b) Precipitation Gages (n=123)")+
+  ggspatial::annotation_scale(
+    location = "br",  # Bottom right
+    bar_cols = c("black", "white"),  # Simple black and white bar
+    line_width = 0.5,  # Thinner lines for the scale
+    style = "ticks"  # Simpler style with ticks
+  ) +
+  ggspatial::annotation_north_arrow(
+    location = "br", which_north = "true",
+    pad_x = unit(0, "in"), pad_y = unit(0.35, "in"),  # Adjusted for bottom right placement
+    height = unit(0.25, "in"), width = unit(0.25, "in"),  # Smaller size
+    style = ggspatial::north_arrow_minimal(
+      fill = "black",  # Black fill for the arrow
+      line_col = "black",
+      text_size = 8
+    )
+  ) +
+  coord_sf(crs = "+proj=longlat +datum=WGS84", expand = FALSE) +  # Include lat/long on axes
+  theme(
+    axis.text = element_text(size = 8, family = "sans"),  # Axis text styling
+    axis.text.x = element_text(margin = margin(t = 5), angle = 0, color = "black"),  # X-axis text color
+    axis.text.y = element_text(margin = margin(r = 5), color = "NA"),  # Y-axis text color
+    axis.ticks = element_line(color = "black"),  # Add tick marks color
+    axis.ticks.x = element_line(color = "black"),  # X-axis tick marks color
+    axis.ticks.y = element_line(color = "NA"),  # Y-axis tick marks color
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = 'grey92', colour = NA),
+    plot.margin = margin(10, 10, 10, 10)  # Adjust margins for consistent sizing
+  ) +
+  
 
+  scale_x_continuous(
+    labels = function(x) paste0(abs(x), "°W")  # No negative signs, add "W"
+  ) +
+  scale_y_continuous(
+    labels = function(y) paste0(y, "°N")  # Add "N" to latitude
+  )
 
+# Arrange the plots
+ggarrange(study_area_q, study_area_p, ncol = 2)
+ggsave('Figure1.pdf')
+ggsave('Figure1.tiff', dpi = 900)
 
 
 ## Other maps, with geographic context
@@ -1968,10 +2054,10 @@ ggplot() +
   geom_sf(data = lakes_df, color = "grey70", fill = "grey92")+
   geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
   geom_sf(data = NE_states, color = "grey40", fill = "grey97") +
-  geom_sf(data = Inland_N_sf, color = "grey40", fill = "transparent", linetype = '4F') +
-  geom_sf(data = Coastal_N_sf, color = "grey40", fill = "transparent", linetype = '4F') +
-  geom_sf(data = Inland_S_sf, color = "grey40", fill = "transparent", linetype = '4F') +
-  geom_sf(data = Coastal_S_sf, color = "grey40", fill = "transparent", linetype = '4F') +
+  # geom_sf(data = Inland_N_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Coastal_N_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  # geom_sf(data = Inland_S_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Coastal_S_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
   geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
   geom_sf(data = prcp_circ, aes(geometry = geometry, col = R_mean), size = 2.9) +
   scale_color_gradientn(colours = c('lemonchiffon', 'khaki1', 'khaki2','lightsalmon1', 'lightsalmon2', 'tomato1', 'tomato2')
@@ -1981,18 +2067,53 @@ ggplot() +
   # ggtitle("R Discharge")+
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = 'grey92', colour = NA))
-ggsave(filename = 'R_P.tiff', dpi = 600)
+        panel.background = element_rect(fill = 'grey92', colour = NA))+
+  ggspatial::annotation_scale(
+    location = "br",  # Bottom right
+    bar_cols = c("black", "white"),  # Simple black and white bar
+    line_width = 0.5,  # Thinner lines for the scale
+    style = "ticks"  # Simpler style with ticks
+  ) +
+  ggspatial::annotation_north_arrow(
+    location = "br", which_north = "true",
+    pad_x = unit(0, "in"), pad_y = unit(0.35, "in"),  # Adjusted for bottom right placement
+    height = unit(0.25, "in"), width = unit(0.25, "in"),  # Smaller size
+    style = ggspatial::north_arrow_minimal(
+      fill = "black",  # Black fill for the arrow
+      line_col = "black",
+      text_size = 8
+    )
+  ) +
+  coord_sf(crs = "+proj=longlat +datum=WGS84", expand = FALSE) +  # Include lat/long on axes
+  theme(
+    axis.text = element_text(size = 8, family = "sans", color = "black"),  # Axis text styling
+    axis.text.x = element_text(margin = margin(t = 5), angle = 0, color = "black"),  # Adjustments for better spacing and color
+    axis.text.y = element_text(margin = margin(r = 5), color = "black"),  # Y-axis text color
+    axis.ticks = element_line(color = "black"),  # Add tick marks color
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = 'grey92', colour = NA),
+    plot.margin = margin(10, 10, 10, 10)  # Adjust margins for consistent sizing
+  ) +
+  
+  scale_x_continuous(
+    labels = function(x) paste0(abs(x), "°W")  # No negative signs, add "W"
+  ) +
+  scale_y_continuous(
+    labels = function(y) paste0(y, "°N")  # Add "N" to latitude
+  )
+ggsave(filename = 'R_P.jpg', dpi = 900)
+ggsave(filename = 'R_P.pdf')
 
 ggplot() +
   geom_sf(data = US_CA_df, color = "grey70", fill = "grey85")+
   geom_sf(data = lakes_df, color = "grey70", fill = "grey92")+
   geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
   geom_sf(data = NE_states, color = "grey40", fill = "grey97") +
-  geom_sf(data = Inland_N_sf, color = "grey40", fill = "transparent", linetype = '4F') +
-  geom_sf(data = Coastal_N_sf, color = "grey40", fill = "transparent", linetype = '4F') +
-  geom_sf(data = Inland_S_sf, color = "grey40", fill = "transparent", linetype = '4F') +
-  geom_sf(data = Coastal_S_sf, color = "grey40", fill = "transparent", linetype = '4F') +
+  # geom_sf(data = Inland_N_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Coastal_N_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  # geom_sf(data = Inland_S_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Coastal_S_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
   geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
   geom_sf(data = q_circ, aes(geometry = geometry, col = R_mean, size = Drainage_area)) +
   scale_color_gradientn(colours = c('lemonchiffon', 'khaki1', 'khaki2','lightsalmon1', 'lightsalmon2', 'tomato1', 'tomato2')
@@ -2002,8 +2123,43 @@ ggplot() +
   # ggtitle("R Discharge")+
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = 'grey92', colour = NA))
-ggsave(filename = 'R_Q.tiff', dpi = 600)
+        panel.background = element_rect(fill = 'grey92', colour = NA))+
+  ggspatial::annotation_scale(
+    location = "br",  # Bottom right
+    bar_cols = c("black", "white"),  # Simple black and white bar
+    line_width = 0.5,  # Thinner lines for the scale
+    style = "ticks"  # Simpler style with ticks
+  ) +
+  ggspatial::annotation_north_arrow(
+    location = "br", which_north = "true",
+    pad_x = unit(0, "in"), pad_y = unit(0.35, "in"),  # Adjusted for bottom right placement
+    height = unit(0.25, "in"), width = unit(0.25, "in"),  # Smaller size
+    style = ggspatial::north_arrow_minimal(
+      fill = "black",  # Black fill for the arrow
+      line_col = "black",
+      text_size = 8
+    )
+  ) +
+  coord_sf(crs = "+proj=longlat +datum=WGS84", expand = FALSE) +  # Include lat/long on axes
+  theme(
+    axis.text = element_text(size = 8, family = "sans", color = "black"),  # Axis text styling
+    axis.text.x = element_text(margin = margin(t = 5), angle = 0, color = "black"),  # Adjustments for better spacing and color
+    axis.text.y = element_text(margin = margin(r = 5), color = "black"),  # Y-axis text color
+    axis.ticks = element_line(color = "black"),  # Add tick marks color
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = 'grey92', colour = NA),
+    plot.margin = margin(10, 10, 10, 10)  # Adjust margins for consistent sizing
+  ) +
+  
+  scale_x_continuous(
+    labels = function(x) paste0(abs(x), "°W")  # No negative signs, add "W"
+  ) +
+  scale_y_continuous(
+    labels = function(y) paste0(y, "°N")  # Add "N" to latitude
+  )
+ggsave(filename = 'R_Q.jpg', dpi = 900)
+ggsave(filename = 'R_Q.pdf')
 
 
 # cox-lewis map
@@ -2011,12 +2167,11 @@ ggplot() +
   geom_sf(data = US_CA_df, color = "grey70", fill = "grey85")+
   geom_sf(data = lakes_df, color = "grey70", fill = "grey92")+
   geom_sf(data = NE_states, color = "grey70", fill = "grey85") +
-  geom_sf(data = NE_states, color = "grey40", fill = "grey97") +
-  geom_sf(data = Inland_N_sf, color = "grey40", fill = "transparent", linetype = '4B') +
-  # geom_sf(data = Coastal_N_sf, color = "grey40", fill = "transparent", linetype = '4B') +
-  geom_sf(data = Inland_S_sf, color = "grey40", fill = "transparent", linetype = '4B') +
-  geom_sf(data = Coastal_S_sf, color = "grey40", fill = "transparent", linetype = '4B') +
-  geom_sf(data = NE_states, color = "grey40", fill = "transparent") +
+  geom_sf(data = Inland_N_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Coastal_N_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Inland_S_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = Coastal_S_sf, color = "black", fill = "transparent", linetype = '4F', size = 1.5) +
+  geom_sf(data = NE_states, color = "grey40", fill = "white") +
   geom_sf(data = q_circ_cox_sf[q_circ_cox_sf$cox_lewis_H2 > 2, ], aes(geometry = geometry, col = cox_lewis_H2, size = Drainage_area)) +
   geom_sf(data = q_circ_cox_sf[q_circ_cox_sf$cox_lewis_H2 < -2, ], aes(geometry = geometry, col = cox_lewis_H2, size = Drainage_area)) +
   geom_sf(data = q_circ_cox_sf[q_circ_cox_sf$cox_lewis_H2 < 2, ], aes(geometry = geometry, col = cox_lewis_H2, size = Drainage_area), pch = 21, fill = NA)+
@@ -2026,5 +2181,40 @@ ggplot() +
   ggtitle('Extreme Discharge Cox-Lewis Z Score, Warm Season (Jun-Oct)')+
   theme(axis.text = element_blank(), axis.ticks = element_blank(), panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = 'grey92', colour = NA))
-ggsave(filename = 'Figure10.tiff', dpi = 600)
+        panel.background = element_rect(fill = 'grey92', colour = NA)) +
+  ggspatial::annotation_scale(
+    location = "br",  # Bottom right
+    bar_cols = c("black", "white"),  # Simple black and white bar
+    line_width = 0.5,  # Thinner lines for the scale
+    style = "ticks"  # Simpler style with ticks
+  ) +
+  ggspatial::annotation_north_arrow(
+    location = "br", which_north = "true",
+    pad_x = unit(0, "in"), pad_y = unit(0.35, "in"),  # Adjusted for bottom right placement
+    height = unit(0.25, "in"), width = unit(0.25, "in"),  # Smaller size
+    style = ggspatial::north_arrow_minimal(
+      fill = "black",  # Black fill for the arrow
+      line_col = "black",
+      text_size = 8
+    )
+  ) +
+  coord_sf(crs = "+proj=longlat +datum=WGS84", expand = FALSE) +  # Include lat/long on axes
+  theme(
+    axis.text = element_text(size = 8, family = "sans", color = "black"),  # Axis text styling
+    axis.text.x = element_text(margin = margin(t = 5), angle = 0, color = "black"),  # Adjustments for better spacing and color
+    axis.text.y = element_text(margin = margin(r = 5), color = "black"),  # Y-axis text color
+    axis.ticks = element_line(color = "black"),  # Add tick marks color
+    panel.grid.major = element_blank(),  # Remove major grid lines
+    panel.grid.minor = element_blank(),  # Remove minor grid lines
+    panel.background = element_rect(fill = 'grey92', colour = NA),
+    plot.margin = margin(10, 10, 10, 10)  # Adjust margins for consistent sizing
+  ) +
+  
+  scale_x_continuous(
+    labels = function(x) paste0(abs(x), "°W")  # No negative signs, add "W"
+  ) +
+  scale_y_continuous(
+    labels = function(y) paste0(y, "°N")  # Add "N" to latitude
+  )
+ggsave(filename = 'Figure10.tiff', dpi = 900)
+ggsave(filename = 'Figure10.pdf')
